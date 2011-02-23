@@ -36,7 +36,7 @@ if (not $KLCFILE_NAME) {
     }
 }
 
-open my $KLCFILE, '<:encoding(utf-16)', $KLCFILE_NAME
+open my $KLCFILE, '<:encoding(utf-16)', $KLCFILE_NAME ## no critic (RequireBriefOpen)
     or croak "Can't open $KLCFILE_NAME: $OS_ERROR";
 my $last_line = q{};
 
@@ -53,7 +53,7 @@ while (<$KLCFILE>) {
 			$INFORMATIONS{layoutname} = $kb;
 			next;
 		}
-		elsif (-1 == index ' COPYRIGHT COMPANY LOCALEID VERSION ', " $1 ") {
+		elsif (not ($1 ~~ [ qw(COPYRIGHT COMPANY LOCALEID VERSION) ])) {
 			next;
 		}
 		else {
@@ -173,12 +173,12 @@ while (<$KLCFILE>) {
         . myChr(hex $parts[0]) . ' -> '
         . myChr(hex $parts[1]) . "\n";
 }
-close $KLCFILE;
+close $KLCFILE
+	or croak("can't close $KLCFILE after writing: $OS_ERROR");
 
 ####### Write to ini file #######
 
-say "opening $INIFILE_NAME";
-open my $INIFILE, '>:utf8', $INIFILE_NAME
+open my $INIFILE, '>:utf8', $INIFILE_NAME ## no critic (RequireBriefOpen)
     or croak("can't open $INIFILE_NAME for writing: $OS_ERROR");
 binmode $INIFILE, ':utf8';
 print $INIFILE <<'EOF';
@@ -206,7 +206,7 @@ foreach (
     'modified_after_generate'
     )
 {
-    if ($_ eq '') {
+    if ($_ eq q{}) {
         print $INIFILE "\n";
     }
     else {
@@ -230,7 +230,9 @@ print $INIFILE $LIGATURE;
 print $INIFILE "\n\n";
 print $INIFILE $DEADKEYS;
 print $INIFILE "\n\n";
-close $INIFILE;
+
+close $INIFILE
+	or croak "can't close $INIFILE after writing: $OS_ERROR";
 
 ########################### Functions ###########################
 
@@ -239,18 +241,22 @@ sub mapkey {
     my $un;    # Unicode number
     my $isDeadkey = 0;
 
-    return '--' if $data eq '-1'; ## no critic (ProhibitNoisyQuotes)
-    return '%%' if $data eq '%%'; ## no critic (ProhibitNoisyQuotes)
+	## no critic (ProhibitNoisyQuotes)
+    return '--' if $data eq '-1';
+    return '%%' if $data eq '%%';
     if (substr($data, -1) eq '@') {
         $data = substr($data, 0, -1);
         $isDeadkey = 1;
     }
+	## use critic (ProhibitNoisyQuotes)
+	
     if (1 == length($data)) {
         $un = ord $data;
     }
     else {
         $un = hex substr($data, 0, 4);
     }
+	
     return 'dk' . DeadKeyNumber($un) if $isDeadkey;
     return '*{Enter}'                if $un == 13;
     return '*{Tab}'                  if $un == 9;

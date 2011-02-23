@@ -74,6 +74,11 @@ $INFORMATIONS{generated_from}          = $KLCFILE_NAME;
 
 # $INFORMATIONS{generated_at} = gmtime; # XXX
 
+## no critic (ProhibitMagicNumbers)
+my $SGCAP_KEY = 8;
+my $SGCAP_SHIFT_KEY = 9;
+## use critic (ProhibitMagicNumbers)
+
 my @SHIFTSTATES;                  # position => state
 {
     while (<$KLCFILE>) {          # Shift state
@@ -86,8 +91,7 @@ my @SHIFTSTATES;                  # position => state
     }
 	
     $INFORMATIONS{shiftstates} = join q{:}, @SHIFTSTATES;
-    push @SHIFTSTATES, 8;         # SGCap + Key
-    push @SHIFTSTATES, 9;         # SGCap + Shift + Key
+    push @SHIFTSTATES, ($SGCAP_KEY, $SGCAP_SHIFT_KEY)
 }
 
 ####### Read keymapper #######
@@ -114,14 +118,16 @@ while (<$KLCFILE>) {
     next if not(@parts);
     my ($sc, $vk, $cap);
     ($sc, $vk, $cap, @parts) = @parts;
-    if ($cap eq 'SGCap') {
-        $cap = 8;
+    
+	if ($cap eq 'SGCap') {
+        $cap = $SGCAP_KEY;
         local $_ = <$KLCFILE>;
         s{\s*//.*$}{}xms;
         my @t = split /\s+/xms;
-        splice @t, 0, 3;
+        splice @t, 0, 3; ## no critic (ProhibitMagicNumbers)
         push @parts, @t;
     }
+	
     $LAYOUT .= 'SC0' . $sc . ' = ';
     $LAYOUT .= $vk;
     $LAYOUT .= "\t" . $cap;
@@ -243,23 +249,27 @@ sub mapkey {
 	## no critic (ProhibitNoisyQuotes)
     return '--' if $data eq '-1';
     return '%%' if $data eq '%%';
+	## no critic (ProhibitMagicNumbers)
     if (substr($data, -1) eq '@') {
         $data = substr($data, 0, -1);
         $isDeadkey = 1;
     }
-	## use critic (ProhibitNoisyQuotes)
+	## use critic
 	
-    if (1 == length($data)) {
+	## no critic (ProhibitMagicNumbers)
+    if (length($data) == 1) {
         $un = ord $data;
     }
     else {
-        $un = hex substr($data, 0, 4);
+        $un = hex substr($data, 0, 4); 
     }
 	
     return 'dk' . DeadKeyNumber($un) if $isDeadkey;
     return '*{Enter}'                if $un == 13;
     return '*{Tab}'                  if $un == 9;
     return '={Space}'                if $un == 32;
+	## use critic (ProhibitMagicNumbers)
+
     return myChr($un);
 }
 
@@ -553,10 +563,11 @@ sub shiftStateName {
     my $num = shift;
     my $res = q{};
 	
-	if ($num & 8) {
+	if ($num & $SGCAP_KEY) {
 		$res .= 'Cap';
 	}
     
+	## no critic (ProhibitMagicNumbers)
 	if (($num & 6) == 6) {
         $res .= 'AGr';
     }
@@ -565,6 +576,7 @@ sub shiftStateName {
 			$res .= 'Ctrl';
 		}
     }
+	## use critic (ProhibitMagicNumbers)
     
 	if ($num & 1) {
 		$res .= 'Sh';

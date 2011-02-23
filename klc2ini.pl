@@ -24,7 +24,7 @@ my %INFORMATIONS = ();
 
 ####### Read informations #######
 
-if not ( $KLCFILE_NAME ) {
+if (not $KLCFILE_NAME ) {
 	foreach ( <*.klc> ) {
 		if ( $KLCFILE_NAME ) {
 			croak 'Two .klc files!';
@@ -35,25 +35,31 @@ if not ( $KLCFILE_NAME ) {
 	}
 }
 
-open my $KLCFILE, '<:encoding(utf-16)', $KLCFILE_NAME  or die "Can't open $KLCFILE_NAME: $!";;
-my $ll = ''; # Last Line
+open my $KLCFILE, '<:encoding(utf-16)', $KLCFILE_NAME
+	or die "Can't open $KLCFILE_NAME: $!";;
+my $last_line = '';
 
 while (<$KLCFILE>) {
-	my $k;
+	my $short_property;
 	chomp;
-	last if /^SHIFTSTATE/;
-	next unless /^([A-Z]+)\s+(\S.+?)\s*$/;
+	
+	last if (/^SHIFTSTATE/);
+	
+	next if not /^([A-Z]+)\s+(\S.+?)\s*$/;
+	
 	if ( $1 eq 'KBD') {
-		my ($kc,$kb) = split /\t/,$2;
+		my ($kc, $kb) = split /\t/, $2;
 		$INFORMATIONS{layoutcode} = $kc;
 		$INFORMATIONS{layoutname} = $kb;
 		next;
-	} elsif ( -1 == index ' COPYRIGHT COMPANY LOCALEID VERSION ', ' '.$1.' ') {
-		next;
-	} else {
-		$k = $1;
 	}
-	$INFORMATIONS{(lc($k))} = $2;
+	elsif ( -1 == index ' COPYRIGHT COMPANY LOCALEID VERSION ', " $1 ") {
+		next;
+	}
+	else {
+		$short_property = $1;
+	}
+	$INFORMATIONS{(lc($short_property))} = $2;
 }
 foreach (keys %INFORMATIONS) { # remove quotes
 	$INFORMATIONS{$_} = substr($INFORMATIONS{$_}, 1,-1) if ( $INFORMATIONS{$_} =~ /^".*"$/ )
@@ -68,7 +74,7 @@ my @SHIFTSTATES; # position => state
 	while (<$KLCFILE>) { # Shift state
 		chomp;
 		last if /^LAYOUT/;
-		next unless /^(\d+)\s+.+$/;
+		next if not /^(\d+)\s+.+$/;
 		push @SHIFTSTATES, $1;
 	}
 	$INFORMATIONS{shiftstates} = join ":", @SHIFTSTATES;
@@ -91,13 +97,13 @@ $LAYOUT .= "\tCaps\tCapsSh\n";
 while (<$KLCFILE>) {
 	chomp;
 	if ( /^(LIGATURE|DEADKEY|KEYNAME)/ ) {
-		$ll = $_;
+		$last_line = $_;
 		last;
 	}
 	s!\s*//.*$!!;
 	my @parts = split /\s+/;
 	
-	next unless (@parts);
+	next if not (@parts);
 	my ($sc, $vk, $cap);
 	($sc, $vk, $cap, @parts) = @parts;
 	if ( $cap eq 'SGCap' ) {
@@ -121,7 +127,7 @@ while (<$KLCFILE>) {
 
 ####### Read dead keys #######
 
-$ll =~ /^DEADKEY\s+(....)/;
+$last_line =~ /^DEADKEY\s+(....)/;
 my $dk = $1; # Current dead key
 my $dkChr = ''; # DK%dkChr%...
 my $newdk = 1;
@@ -143,7 +149,7 @@ while (<$KLCFILE>) {
 	}
 	s!\s*//.*$!!;
 	my @parts = split /\s+/;
-	next unless (@parts);
+	next if not (@parts);
 	$DEADKEYS .= sprintf('%-4s',(hex $parts[0])).' = ';
 	$DEADKEYS .= sprintf('%4u',(hex $parts[1]));
 	$DEADKEYS .= "\t" . '; '.myChr(hex $parts[0]).' -> '.myChr(hex $parts[1])."\n";
@@ -206,6 +212,8 @@ print INI $DEADKEYS;
 print INI "\n\n";
 close INI;
 
+exit;
+
 ########################### Functions ###########################
 
 sub mapkey
@@ -238,9 +246,9 @@ sub mapkey
 	my $mDK = 0;
 	sub DeadKeyNumber
 	{
-		my $k = shift;
-		$DKN{$k} = (++$mDK) unless defined $DKN{$k};
-		return $DKN{$k};
+		my $short_property = shift;
+		$DKN{$short_property} = (++$mDK) if not defined $DKN{$short_property};
+		return $DKN{$short_property};
 	}
 }
 
@@ -262,7 +270,7 @@ sub mapkey
 			'2f' => 'vV', '30' => 'bB', '31' => 'nN', '32' => 'mM', 
 			'33' => ',<', '34' => '.>', '35' => '/?', '39' => 'Space', 
 			'56' => 'OEM_102', '53' => 'Decimal in Numpad', 
-		) unless %QC;
+		) if not %QC;
 		my $sc = shift;
 		return $QC{($sc)};
 	}
@@ -483,7 +491,7 @@ sub shiftStateName
 		$res .= 'Ctrl' if $num & 2;
 	}
 	$res .= 'Sh' if $num & 1;
-	$res = 'Norm' unless $res;
+	$res = 'Norm' if not $res;
 	return $res;
 }
 
@@ -491,3 +499,5 @@ sub myChr
 {
 	return Encode::encode("utf8", chr shift);
 }
+
+__END__

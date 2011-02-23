@@ -57,16 +57,15 @@ while (<$KLCFILE>) {
 			next;
 		}
 		else {
-			$short_property = $1;
+			$short_property = lc $1;
 		}
-		$INFORMATIONS{ (lc($short_property)) } = $2;
+
+		$INFORMATIONS{ $short_property } = $2;
 	}
 }
 
-foreach (keys %INFORMATIONS) {    # remove quotes
-    if ($INFORMATIONS{$_} =~ /\A ".*" \z/xms) {
-        $INFORMATIONS{$_} = substr($INFORMATIONS{$_}, 1, -1);
-    }
+foreach (values %INFORMATIONS) {
+	s/\A "(.+)" \z/$1/xms
 }
 
 $INFORMATIONS{homepage}                = 'http://pkl.sourceforge.net/';

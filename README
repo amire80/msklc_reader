@@ -3,8 +3,15 @@ Microsoft Keyboard Layout Creator and MS KLC.
 
 It is based on Portable Keyboard Layout code by Farkas Máté:
 http://sourceforge.net/projects/pkl/
-
 Modifications by Amir E. Aharoni (amir.aharoni@mail.huji.ac.il).
+
+The version here doesn't add any new functionality - it only fixes a couple
+of minor bugs and does the same thing:
+* parse a KLC file
+* output a matching PKL ini file.
+
+The plan is to make it into a generic KLC parser than can output various
+formats, such as XKB, Keyman, Narayam etc.
 
 Copyright: Farkas Máté, Amir E. Aharoni.
 
